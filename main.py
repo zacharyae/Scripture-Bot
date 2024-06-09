@@ -248,7 +248,7 @@ async def on_message(message):
                             relevant_verses.append({"verse": searchingVerse["verse"], "text": searchingVerse["text"]})
                             print(f'found verse {searchingVerse["verse"], searchingVerse["text"]}')
 
-                    link = f"https://www.churchofjesuschrist.org/study/scriptures/dc-testament/dc/{chapter}?lang=eng&id=p{verse}#p{verse}"
+                    link = f"[D&C {chapter}:{verse}](https://www.churchofjesuschrist.org/study/scriptures/dc-testament/dc/{chapter}?lang=eng&id=p{verse}#p{verse})"
                     #book.title(), int(chapterNumber), relevant_verses, script, lowVerse, highVerse
                     
                     items_per_page = calculate_items_per_page(relevant_verses)
@@ -344,7 +344,7 @@ async def on_message(message):
                             print(f'verse: {searchingVerse["verse"]}')
                             relevant_verses.append({"verse": searchingVerse["verse"], "text": searchingVerse["text"]})
 
-                    link = f"https://www.churchofjesuschrist.org/study/scriptures/dc-testament/dc/{chapter}?lang=eng&id=p{start_verse}-p{end_verse}#p{start_verse}"
+                    link = f"[D&C {chapter}:{start_verse}-{end_verse}](https://www.churchofjesuschrist.org/study/scriptures/dc-testament/dc/{chapter}?lang=eng&id=p{start_verse}-p{end_verse}#p{start_verse})"
 
                     print(relevant_verses)
                     items_per_page = calculate_items_per_page(relevant_verses)
@@ -428,29 +428,54 @@ async def verse(ctx):
             book_name, chapter, lowVerse = match[0], match[1], match[2]
         highVerse = None
         print(book_name)
-
-        if book_name.lower() in bomList:
-            scripture = 'bom'
-        elif book_name.lower() in oldTestList:
-            scripture = 'old'
-        elif book_name.lower() in newTestList:
-            scripture = 'new'
-        elif book_name.lower() in pgpList:
-            scripture = 'pgp'
-        else:
-            await ctx.send('error')
-            return
-            
-        embed_msg = get_scripture(book_name, chapter, lowVerse, highVerse, scripture)
         
-        items_per_page = calculate_items_per_page(embed_msg[2])
-        page_number = 1
-        max_pages = (len(embed_msg[2]) + items_per_page - 1) // items_per_page  # Calculate total number of pages
+        if book_name.lower() in dcList:
+            with open("doctrine-and-covenants.json", "r") as f:
+                data = json.load(f)
+            dataList = data["sections"]
+            for sections in dataList:
+                if sections["section"] == int(chapter):
+                    print(sections["section"])
+                    relevant_verses = []
+                    for searchingVerse in sections["verses"]:
+                        print(f'verse: {verse}')
+                        if searchingVerse["verse"] == int(verse):
+                            relevant_verses.append({"verse": searchingVerse["verse"], "text": searchingVerse["text"]})
+                            print(f'found verse {searchingVerse["verse"], searchingVerse["text"]}')
 
-        embed = format_scripture_message(embed_msg[0], embed_msg[1], embed_msg[2], page_number, items_per_page)
-        link = make_link(embed_msg[0], embed_msg[1], embed_msg[3], embed_msg[4], embed_msg[5])
+                    link = f"[D&C {chapter}:{verse}](https://www.churchofjesuschrist.org/study/scriptures/dc-testament/dc/{chapter}?lang=eng&id=p{verse}#p{verse})"
+                    #book.title(), int(chapterNumber), relevant_verses, script, lowVerse, highVerse
+                    
+                    items_per_page = calculate_items_per_page(relevant_verses)
+                    page_number = 1
+                    max_pages = (len(relevant_verses) + items_per_page - 1) // items_per_page  # Calculate total number of pages
+
+
+                    print(relevant_verses)
+                    embed = format_scripture_message(book_name.title(), int(chapter), relevant_verses, page_number, items_per_page)
+        else:
+            if book_name.lower() in bomList:
+                scripture = 'bom'
+            elif book_name.lower() in oldTestList:
+                scripture = 'old'
+            elif book_name.lower() in newTestList:
+                scripture = 'new'
+            elif book_name.lower() in pgpList:
+                scripture = 'pgp'
+            else:
+                await ctx.send('error')
+                return
+                
+            embed_msg = get_scripture(book_name, chapter, lowVerse, highVerse, scripture)
+            
+            items_per_page = calculate_items_per_page(embed_msg[2])
+            page_number = 1
+            max_pages = (len(embed_msg[2]) + items_per_page - 1) // items_per_page  # Calculate total number of pages
     
-        link = make_link(embed_msg[0], embed_msg[1], embed_msg[3], embed_msg[4], embed_msg[5])
+            embed = format_scripture_message(embed_msg[0], embed_msg[1], embed_msg[2], page_number, items_per_page)
+            link = make_link(embed_msg[0], embed_msg[1], embed_msg[3], embed_msg[4], embed_msg[5])
+        
+            link = make_link(embed_msg[0], embed_msg[1], embed_msg[3], embed_msg[4], embed_msg[5])
         await ctx.send(embed=embed)
         await ctx.send(link)
         
@@ -546,38 +571,67 @@ async def randomverse(ctx):
         allscripture = ref.read()
     scriptureList = allscripture.split(', ')
     script = random.choice(scriptureList)
-    script = '1 nephi 1:1'
+    print(script)
     pattern_single = r'\b((?:genesis|exodus|leviticus|numbers|deuteronomy|joshua|judges|ruth|1\ssamuel|2\ssamuel|1\skings|2\skings|1\schronicles|2\schronicles|ezra|nehemiah|esther|job|psalms|proverbs|ecclesiastes|song\sof\ssolomon|isaiah|jeremiah|lamentations|ezekiel|daniel|hosea|joel|amos|obadiah|jonah|micah|nahum|habakkuk|zephaniah|haggai|zechariah|malachi|matthew|mark|luke|john|acts|romans|1\scorinthians|2\scorinthians|galatians|ephesians|philippians|colossians|1\sthessalonians|2\sthessalonians|1\stimothy|2\stimothy|titus|philemon|hebrews|james|1\speter|2\speter|1\sjohn|2\sjohn|3\sjohn|jude|revelation|1\snephi|2\snephi|jacob|enos|jarom|omni|words\sof\smormon|mosiah|alma|helaman|3\snephi|4\snephi|mormon|ether|moroni|doctrine\s&\scovenants|doctrine\sand\scovenants|d&c|moses|abraham|jsm|joseph\ssmith\smatthew|joseph\ssmith-matthew|joseph\ssmith\shistory|joseph\ssmith-history|jsh|articles\sof\sfaith|aof|tobit|judith|wisdom\sof\ssolomon|sirach|baruch|letter\sof\sjeremiah|prayer\sof\sazariah|susanna|bel\sand\sthe\sdragon|1\smaccabees|2\smaccabees|1\sesdras|2\sesdras|prayer\sof\smanasseh|additions\sto\sesther|living\schrist|the\sfamily|family\sproclamation|restoration\sproclamation|official\sdeclaration|od)\b)\s+(\d+):(\d+)(?!\s*(?:−|-|–|–|—)\d+)\b'
 
-    single_verse_refs = re.findall(pattern_single, script)
+    single_verse_refs = re.findall(pattern_single, script.lower())
 
-    print(single_verse_refs)
     for match in single_verse_refs:
+        print(match)
         book_name, chapter, lowVerse = match[0], match[1], match[2]
     highVerse = None
-
-    if book_name.lower() in bomList:
-        scripture = 'bom'
-    elif book_name.lower() in oldTestList:
-        scripture = 'old'
-    elif book_name.lower() in newTestList:
-        scripture = 'new'
-    elif book_name.lower() in pgpList:
-        scripture = 'pgp'
-    else:
-        await ctx.send('error')
-        return
-        
-    embed_msg = get_scripture(book_name, chapter, lowVerse, highVerse, scripture)
     
-    items_per_page = calculate_items_per_page(embed_msg[2])
-    page_number = 1
-    max_pages = (len(embed_msg[2]) + items_per_page - 1) // items_per_page  # Calculate total number of pages
+    if book_name.lower() in dcList:
+        if book_name.lower() in dcList:
+            with open("doctrine-and-covenants.json", "r") as f:
+                data = json.load(f)
+            dataList = data["sections"]
+            for sections in dataList:
+                if sections["section"] == int(str(chapter)):
+                    print(sections["section"])
+                    relevant_verses = []
+                    for searchingVerse in sections["verses"]:
+                        print(f'verse: {verse}')
+                        if searchingVerse["verse"] == int(str(lowVerse)):
+                            relevant_verses.append({"verse": searchingVerse["verse"], "text": searchingVerse["text"]})
+                            print(f'found verse {searchingVerse["verse"], searchingVerse["text"]}')
 
-    embed = format_scripture_message(embed_msg[0], embed_msg[1], embed_msg[2], page_number, items_per_page)
-    link = make_link(embed_msg[0], embed_msg[1], embed_msg[3], embed_msg[4], embed_msg[5])
+                    link = f"[D&C {chapter}:{lowVerse}](https://www.churchofjesuschrist.org/study/scriptures/dc-testament/dc/{chapter}?lang=eng&id=p{verse}#p{verse})"
+                    #book.title(), int(chapterNumber), relevant_verses, script, lowVerse, highVerse
+                    
+                    items_per_page = calculate_items_per_page(relevant_verses)
+                    page_number = 1
+                    max_pages = (len(relevant_verses) + items_per_page - 1) // items_per_page  # Calculate total number of pages
 
-    link = make_link(embed_msg[0], embed_msg[1], embed_msg[3], embed_msg[4], embed_msg[5])
+
+                    print(relevant_verses)
+                    embed = format_scripture_message(book_name.title(), int(chapter), relevant_verses, page_number, items_per_page)
+                 
+    else:
+        if book_name.lower() in bomList:
+            scripture = 'bom'
+        elif book_name.lower() in oldTestList:
+            scripture = 'old'
+        elif book_name.lower() in newTestList:
+            scripture = 'new'
+        elif book_name.lower() in pgpList:
+            scripture = 'pgp'
+        elif book_name.lower() in apocryphaList:
+            scripture = 'apoc'
+        else:
+            await ctx.send('error')
+            return
+            
+        embed_msg = get_scripture(book_name, chapter, lowVerse, highVerse, scripture)
+        
+        items_per_page = calculate_items_per_page(embed_msg[2])
+        page_number = 1
+        max_pages = (len(embed_msg[2]) + items_per_page - 1) // items_per_page  # Calculate total number of pages
+    
+        embed = format_scripture_message(embed_msg[0], embed_msg[1], embed_msg[2], page_number, items_per_page)
+        link = make_link(embed_msg[0], embed_msg[1], embed_msg[3], embed_msg[4], embed_msg[5])
+    
+        link = make_link(embed_msg[0], embed_msg[1], embed_msg[3], embed_msg[4], embed_msg[5])
     await ctx.send(embed=embed)
     await ctx.send(link)
         
