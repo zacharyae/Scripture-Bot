@@ -1,0 +1,47 @@
+from discord.ext import commands
+from discord import Embed
+
+class General(commands.Cog):
+    def __init__(self, bot):
+        self.bot = bot
+    
+    @commands.command()
+    async def help(self, ctx):
+        embed = discord.Embed(
+            title="Help",
+            url="https://www.churchofjesuschrist.org/study/scriptures?lang=eng&platform=web",
+            color = 0x011738)
+        embed.add_field(name='-votd', value='Brings up the verse of the day!', inline=False)
+        embed.add_field(name='-qotd', value='Brings up the quote of the day!', inline=False)
+        embed.add_field(name='-mhl', value='Pulls up a link to find your local chapel!', inline=False)
+        embed.add_field(name='-mtm', value='Pulls up a link to request a missionary visit!', inline=False)
+        embed.add_field(name='-nyk', value='Pulls up the Know You Know series', inline=False)
+        
+        print("hello")
+        await ctx.send(embed=embed)
+        
+        
+        
+        @commands.command(aliases=['wipe'])
+        async def wipeserver(self, ctx):
+            if ctx.author.id == 615710462989828096:
+                await ctx.send("https://tenor.com/view/nope-internet-gif-5115830")
+            else:
+                await ctx.send('skill issue :troll:')
+                
+        @commands.command(aliases=['meetinghouselocator'])
+        async def mhl(self, ctx):
+            embed = discord.Embed(title="Find your local church!", color = 0x011738, url="https://maps.churchofjesuschrist.org/")
+            await ctx.send(embed = embed)
+                        
+        @commands.command(aliases=['meetthemissionaries'])
+        async def mtm(self, ctx):
+            embed = discord.Embed(title="Meet your local missionaries!", color = 0x011738, url="https://www.churchofjesuschrist.org/comeuntochrist/sg/form/request-missionary-visit")
+            await ctx.send(embed = embed)
+                
+        @commands.command(aliases=['nyk'])
+        async def now_you_know(self, ctx):
+            await ctx.send("[Now You Know](https://www.youtube.com/playlist?list=PLAYgY8SPtEWE_fFTRP2TQmOXaQh1TeQ-p)")
+         
+async def setup(bot):
+    await bot.add_cog(General(bot))

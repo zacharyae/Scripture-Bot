@@ -1,0 +1,244 @@
+from discord.ext import commands
+from utils.scripture_utils import get_scripture, make_link
+from utils.embed_helpers import format_scripture_message
+from utils.constants import BOMLIST, DCLIST, PGPLIST, OLDTESTLIST, NEWTESTLIST, APOCRYPHALIST, PROCLIST, BOOKNAMEMAP
+
+class Scripture(commands.Cog):
+    def __init__(self, bot):
+        self.bot = bot
+        
+    @commands.command()
+    async def family(self, ctx):
+        await ctx.send(file=discord.File('../data/posters/family_proclamation.png'))
+    @commands.command(aliases=['lc', 'living', 'christ'])
+    async def livingChrist(self, ctx):
+        await ctx.send(file=discord.File('../data/posters/the_living_christ_2015.png'))
+    @commands.command()
+    async def aof(self, ctx):
+        await ctx.send(file=discord.File('../data/posters/faith_articles_lds.jpeg'))
+    @commands.command()
+    async def restoration(self, ctx):
+        await ctx.send(file=discord.File('../data/posters/restoration_bicentennial_proclamation.png'))
+
+    def helpBookEmbed(self, lst):
+        if lst[0] == '1 nephi':
+            name = 'Book of Mormon'
+        elif lst[0] == 'moses':
+            name = 'Pearl of Great Price'
+        elif lst[0] == 'tobit':
+            name = 'Apocrypha'
+        elif lst[0] == 'matthew':
+            name = 'New Testament'
+        elif lst[0] == 'genesis':
+            name = 'Old Testament'
+    
+        embed = discord.Embed(color=0x011738)
+
+        value = ''
+        for item in lst:
+            if item == 'songs of solomon':
+                pass
+            else:
+                value += item.title() + ', '
+        embed.add_field(name = name, value = value, inline = False)
+        return embed
+    
+    @commands.command()
+    async def bom(self, ctx):
+        embed = helpBookEmbed(BOMLIST)
+        await ctx.send(embed = embed)
+    
+    @commands.command()
+    async def old(self, ctx):
+        embed = helpBookEmbed(OLDTESTLIST)
+        await ctx.send(embed = embed)
+    
+    @commands.command()
+    async def new(self, ctx):
+        embed = helpBookEmbed(NEWTESTLIST)
+        await ctx.send(embed = embed)
+    
+    @commands.command()
+    async def pgp(self, ctx):
+        embed = helpBookEmbed(PGPLIST)
+        await ctx.send(embed = embed)
+    
+    @commands.command(aliases=['apocrypha'])
+    async def apoc(self, ctx):
+        embed = helpBookEmbed(APOCRYPHALIST)
+        await ctx.send(embed = embed)    
+        
+    @commands.command()
+    async def randomverse(self, ctx):
+        with open ('../data/reference.txt', 'r+') as ref:
+            allscripture = ref.read()
+        scriptureList = allscripture.split(', ')
+        script = random.choice(scriptureList)
+        print(script)
+        pattern_single = r'\b((?:genesis|exodus|leviticus|numbers|deuteronomy|joshua|judges|ruth|1\ssamuel|2\ssamuel|1\skings|2\skings|1\schronicles|2\schronicles|ezra|nehemiah|esther|job|psalms|proverbs|ecclesiastes|song\sof\ssolomon|isaiah|jeremiah|lamentations|ezekiel|daniel|hosea|joel|amos|obadiah|jonah|micah|nahum|habakkuk|zephaniah|haggai|zechariah|malachi|matthew|mark|luke|john|acts|romans|1\scorinthians|2\scorinthians|galatians|ephesians|philippians|colossians|1\sthessalonians|2\sthessalonians|1\stimothy|2\stimothy|titus|philemon|hebrews|james|1\speter|2\speter|1\sjohn|2\sjohn|3\sjohn|jude|revelation|1\snephi|2\snephi|jacob|enos|jarom|omni|words\sof\smormon|mosiah|alma|helaman|3\snephi|4\snephi|mormon|ether|moroni|doctrine\s&\scovenants|doctrine\sand\scovenants|d&c|moses|abraham|jsm|joseph\ssmith\smatthew|joseph\ssmith-matthew|joseph\ssmith\shistory|joseph\ssmith-history|jsh|articles\sof\sfaith|aof|tobit|judith|wisdom\sof\ssolomon|sirach|baruch|letter\sof\sjeremiah|prayer\sof\sazariah|susanna|bel\sand\sthe\sdragon|1\smaccabees|2\smaccabees|1\sesdras|2\sesdras|prayer\sof\smanasseh|additions\sto\sesther|living\schrist|the\sfamily|family\sproclamation|restoration\sproclamation|official\sdeclaration|od)\b)\s+(\d+):(\d+)(?!\s*(?:−|-|–|–|—)\d+)\b'
+    
+        single_verse_refs = re.findall(pattern_single, script.lower())
+    
+        for match in single_verse_refs:
+            print(match)
+            book_name, chapter, lowVerse = match[0], match[1], match[2]
+        highVerse = None
+    
+        if book_name.lower() in DCLIST:
+            if book_name.lower() in DCLIST:
+                with open("../data/doctrine-and-covenants.json", "r") as f:
+                    data = json.load(f)
+                dataList = data["sections"]
+                for sections in dataList:
+                    if sections["section"] == int(str(chapter)):
+                        print(sections["section"])
+                        relevant_verses = []
+                        for searchingVerse in sections["verses"]:
+                            print(f'verse: {verse}')
+                            if searchingVerse["verse"] == int(str(lowVerse)):
+                                relevant_verses.append({"verse": searchingVerse["verse"], "text": searchingVerse["text"]})
+                                print(f'found verse {searchingVerse["verse"], searchingVerse["text"]}')
+    
+                        link = f"[D&C {chapter}:{lowVerse}](https://www.churchofjesuschrist.org/study/scriptures/dc-testament/dc/{chapter}?lang=eng&id=p{verse}#p{verse})"
+                        #book.title(), int(chapterNumber), relevant_verses, script, lowVerse, highVerse
+    
+                        items_per_page = calculate_items_per_page(relevant_verses)
+                        page_number = 1
+                        max_pages = (len(relevant_verses) + items_per_page - 1) // items_per_page  # Calculate total number of pages
+    
+    
+                        print(relevant_verses)
+                        embed = format_scripture_message(book_name.title(), int(chapter), relevant_verses, page_number, items_per_page, link)
+    
+        else:
+            if book_name.lower() in BOMLIST:
+                scripture = 'bom'
+            elif book_name.lower() in OLDTESTLIST:
+                scripture = 'old'
+            elif book_name.lower() in NEWTESTLIST:
+                scripture = 'new'
+            elif book_name.lower() in PGPLIST:
+                scripture = 'pgp'
+            elif book_name.lower() in APOCRYPHALIST:
+                scripture = 'apoc'
+            else:
+                await ctx.send('error')
+                return
+    
+            embed_msg = get_scripture(book_name, chapter, lowVerse, highVerse, scripture)
+    
+            items_per_page = calculate_items_per_page(embed_msg[2])
+            page_number = 1
+            max_pages = (len(embed_msg[2]) + items_per_page - 1) // items_per_page  # Calculate total number of pages
+    
+            link = make_link(embed_msg[0], embed_msg[1], embed_msg[3], embed_msg[4], embed_msg[5])
+            embed = format_scripture_message(embed_msg[0], embed_msg[1], embed_msg[2], page_number, items_per_page, link)
+        await ctx.send(embed=embed)
+        
+    @commands.command(aliases=['Quote', 'qotd', 'Qotd', 'dailyquote'])
+    async def quote(self, ctx):
+        url = 'https://www.churchofjesuschrist.org/my-home?lang=eng'
+        response = requests.get(url)
+        if response.status_code == 200:
+            # Get the raw HTML content of the page
+            html_content = response.text
+    
+            pattern = r'"quote"(?:[^"]*"){12}'
+            matches = re.findall(pattern, html_content)
+    
+            if matches:
+                for match in matches:
+                    quote = match[8:] + '}'
+            else:
+                print(f'No text found within the element "{target_element}"')
+    
+            quote_dict = ast.literal_eval(quote)
+            print(quote_dict)
+            await ctx.send(quote_dict['title'])
+            embed = discord.Embed(color=0x011738)
+            embed.add_field(name = quote_dict['title'], value = str(quote_dict['text']), inline = False)
+            await ctx.send(embed=embed)
+            
+    @commands.command(aliases=['Verse', 'votd', 'Votd', 'dailyverse'])
+    async def verse(self, ctx):
+        url = 'https://www.churchofjesuschrist.org/my-home?lang=eng'
+        response = requests.get(url)
+        if response.status_code == 200:
+            # Get the raw HTML content of the page
+            html_content = response.text
+    
+            pattern = r'"scripture"(?:[^"]*"){12}'
+            matches = re.findall(pattern, html_content)
+    
+            if matches:
+                for match in matches:
+                    verse = match[12:] + '}'
+            else:
+                print(f'No text found within the element "{target_element}"')
+    
+            verse_dict = ast.literal_eval(verse)
+            print(verse_dict['title'])
+            pattern_single = r'\b((?:genesis|exodus|leviticus|numbers|deuteronomy|joshua|judges|ruth|1\ssamuel|2\ssamuel|1\skings|2\skings|1\schronicles|2\schronicles|ezra|nehemiah|esther|job|psalms|proverbs|ecclesiastes|song\sof\ssolomon|isaiah|jeremiah|lamentations|ezekiel|daniel|hosea|joel|amos|obadiah|jonah|micah|nahum|habakkuk|zephaniah|haggai|zechariah|malachi|matthew|mark|luke|john|acts|romans|1\scorinthians|2\scorinthians|galatians|ephesians|philippians|colossians|1\sthessalonians|2\sthessalonians|1\stimothy|2\stimothy|titus|philemon|hebrews|james|1\speter|2\speter|1\sjohn|2\sjohn|3\sjohn|jude|revelation|1\snephi|2\snephi|jacob|enos|jarom|omni|words\sof\smormon|mosiah|alma|helaman|3\snephi|4\snephi|mormon|ether|moroni|doctrine\s&\scovenants|doctrine\sand\scovenants|d&c|moses|abraham|jsm|joseph\ssmith\smatthew|joseph\ssmith-matthew|joseph\ssmith\shistory|joseph\ssmith-history|jsh|articles\sof\sfaith|aof|tobit|judith|wisdom\sof\ssolomon|sirach|baruch|letter\sof\sjeremiah|prayer\sof\sazariah|susanna|bel\sand\sthe\sdragon|1\smaccabees|2\smaccabees|1\sesdras|2\sesdras|prayer\sof\smanasseh|additions\sto\sesther|living\schrist|the\sfamily|family\sproclamation|restoration\sproclamation|official\sdeclaration|od)\b)\s+(\d+):(\d+)(?!\s*(?:−|-|–|–|—)\d+)\b'
+            single_verse_refs = re.findall(pattern_single, verse_dict['title'].lower())
+    
+            book_name, chapter, lowVerse = '', '', ''
+            print(single_verse_refs)
+            for match in single_verse_refs:
+                print('hey')
+                book_name, chapter, lowVerse = match[0], match[1], match[2]
+            highVerse = None
+            print(book_name)
+    
+            if book_name.lower() in DCLIST:
+                with open("doctrine-and-covenants.json", "r") as f:
+                    data = json.load(f)
+                dataList = data["sections"]
+                for sections in dataList:
+                    if sections["section"] == int(chapter):
+                        print(sections["section"])
+                        relevant_verses = []
+                        for searchingVerse in sections["verses"]:
+                            print(f'verse: {verse}')
+                            if searchingVerse["verse"] == int(verse):
+                                relevant_verses.append({"verse": searchingVerse["verse"], "text": searchingVerse["text"]})
+                                print(f'found verse {searchingVerse["verse"], searchingVerse["text"]}')
+    
+                        link = f"[D&C {chapter}:{verse}](https://www.churchofjesuschrist.org/study/scriptures/dc-testament/dc/{chapter}?lang=eng&id=p{verse}#p{verse})"
+                        #book.title(), int(chapterNumber), relevant_verses, script, lowVerse, highVerse
+    
+                        items_per_page = calculate_items_per_page(relevant_verses)
+                        page_number = 1
+                        max_pages = (len(relevant_verses) + items_per_page - 1) // items_per_page  # Calculate total number of pages
+    
+    
+                        print(relevant_verses)
+                        embed = format_scripture_message(book_name.title(), int(chapter), relevant_verses, page_number, items_per_page, link)
+            else:
+                if book_name.lower() in BOMLIST:
+                    scripture = 'bom'
+                elif book_name.lower() in OLDTESTLIST:
+                    scripture = 'old'
+                elif book_name.lower() in NEWTESTLIST:
+                    scripture = 'new'
+                elif book_name.lower() in PGPLIST:
+                    scripture = 'pgp'
+                else:
+                    await ctx.send('error')
+                    return
+    
+                embed_msg = get_scripture(book_name, chapter, lowVerse, highVerse, scripture)
+    
+                items_per_page = calculate_items_per_page(embed_msg[2])
+                page_number = 1
+                max_pages = (len(embed_msg[2]) + items_per_page - 1) // items_per_page  # Calculate total number of pages
+                
+                link = make_link(embed_msg[0], embed_msg[1], embed_msg[3], embed_msg[4], embed_msg[5])
+                embed = format_scripture_message(embed_msg[0], embed_msg[1], embed_msg[2], page_number, items_per_page, link)
+            await ctx.send(embed=embed)
+
+
+
+
+
+async def setup(bot):
+    await bot.add_cog(Scripture(bot))
