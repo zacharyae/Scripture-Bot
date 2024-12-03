@@ -1,4 +1,20 @@
 import json
+from utils.constants import BOMLIST, DCLIST, PGPLIST, OLDTESTLIST, NEWTESTLIST, APOCRYPHALIST, PROCLIST, BOOKNAMEMAP
+
+def is_biblical_references_allowed(id):
+    with open("././data/servers.json", "r") as f:  # Adjust to your file path
+        serverDict = json.load(f)
+    for item in serverDict:
+        print(item)
+        if item == str(id):
+            print(item)
+            if serverDict[item]['bible'] == True:
+                allowed = True
+            else:
+                allowed = False
+    # Default to True if the server is not in the settings file
+    return allowed
+
 
 def make_link(book, chapterNumber, script, lowVerse, highVerse):
     abbrevBook = BOOKNAMEMAP.get(book, "Unknown")
@@ -16,7 +32,7 @@ def make_link(book, chapterNumber, script, lowVerse, highVerse):
     elif book == "Restoration Proclamation":
         link = f"[{book}](https://www.churchofjesuschrist.org/study/scriptures/the-restoration-of-the-fulness-of-the-gospel-of-jesus-christ/a-bicentennial-proclamation-to-the-world?lang=eng)"
     elif book == "Official Declaration":
-        link = f"[{book} {chapterNumber}](https://www.churchofjesuschrist.org/study/scriptures/dc-testament/od/{chapterNumber}?lang=eng)"
+        link = f"https://www.churchofjesuschrist.org/study/scriptures/dc-testament/od/{chapterNumber}?lang=eng"
 
     else:
         if highVerse is None:
@@ -30,22 +46,21 @@ def get_scripture(book, chapterNumber, lowVerse, highVerse, scripture):
     script = ''
     #open json file
     if scripture == "old":
-        with open("../data/old-testament.json", "r") as f:
+        with open("././data/old-testament.json", "r") as f:
             script = "ot"
             data = json.load(f)
     elif scripture == "new":
-        with open("../data/new-testament.json", "r") as f:
+        with open("././data/new-testament.json", "r") as f:
             script = "nt"
             data = json.load(f)
     elif scripture == "bom":
-        with open("../data/book-of-mormon.json", "r") as f:
+        with open("././data/book-of-mormon.json", "r") as f:
             script = "bofm"
             data = json.load(f)
     elif scripture == "pgp":
         script = "pgp"
-        with open("../data/pearl-of-great-price.json", "r") as f:
+        with open("././data/pearl-of-great-price.json", "r") as f:
             if book == "jsh" or book == "joseph smith history" or book == "joseph smith-history":
-                print('here am i')
                 book = "Joseph Smith—History"
             elif book == "aof" or book == "articles of faith":
                 book = "Articles of Faith"
@@ -54,7 +69,7 @@ def get_scripture(book, chapterNumber, lowVerse, highVerse, scripture):
             data = json.load(f)
     elif scripture == "proc":
         script = "proc"
-        with open("../data/proclamations.json", "r") as f:
+        with open("././data/proclamations.json", "r") as f:
             data = json.load(f)
         if book == "family proclamation" or book == "the family":
             book = "the family proclamation"
@@ -65,7 +80,7 @@ def get_scripture(book, chapterNumber, lowVerse, highVerse, scripture):
 
     elif scripture == "apoc":
         script = "apoc"
-        with open("../data/apocrypha.json", "r") as f:
+        with open("././data/apocrypha.json", "r") as f:
             script = "apoc"
             data = json.load(f)
     #[book][chapter][verse]
@@ -85,5 +100,6 @@ def get_scripture(book, chapterNumber, lowVerse, highVerse, scripture):
                         else:
                             if verse["verse"] >= int(lowVerse) and verse["verse"] <= int(highVerse):
                                 relevant_verses.append({"verse": verse["verse"], "text": verse["text"]})
+                                
 
                     return book.title(), int(chapterNumber), relevant_verses, script, lowVerse, highVerse
