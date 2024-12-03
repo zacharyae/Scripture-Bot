@@ -17,12 +17,12 @@ from discord.ui import View, Button
 from config import TOKEN
 
 from utils.constants import BOMLIST, DCLIST, PGPLIST, OLDTESTLIST, NEWTESTLIST, APOCRYPHALIST, PROCLIST, BOOKNAMEMAP
-from utils.scripture_utils import get_scripture, make_link
-from utils.embed_helpers import format_scripture_message
+from utils.scripture_utils import get_scripture, make_link, is_biblical_references_allowed
+from utils.embed_helpers import format_scripture_message, calculate_items_per_page
 
 client = discord.ext.commands.Bot(command_prefix="-", intents=discord.Intents.all())
 
-
+global embed_msg
 MAX_EMBED_LENGTH = 1200
 MAX_FIELD_LENGTH = 1024
 
@@ -30,8 +30,8 @@ async def load_extensions():
     # List of command files to load
     extensions = [
         "commands.scripture",  # All scripture-related commands
-        "commands.general"     # General commands (help, quotes, etc.)
-        #"commands.admin",      # Admin-related commands (if any)
+        "commands.general",    # General commands (help, quotes, etc.)
+        "commands.admin"       # Admin-related commands (if any)
     ]
 
     for extension in extensions:
@@ -41,24 +41,7 @@ async def load_extensions():
         except Exception as e:
             print(f"Failed to load extension {extension}: {e}")
 
-def calculate_items_per_page(data):
-    items_per_page = 0
-    current_length = 0
-
-
-    for item in data:
-        verse = item['verse']
-        text = item['text']
-        formatted_item = f"{verse} - {text}\n\n"
-        item_length = len(formatted_item)
-
-        if current_length + item_length <= MAX_EMBED_LENGTH and item_length <= MAX_FIELD_LENGTH:
-            current_length += item_length
-            items_per_page += 1
-        else:
-            break
-
-    return items_per_page    
+  
 
 async def send_paginated_scripture(channel, embed_msg, max_pages, link, items_per_page):
     """
@@ -72,6 +55,7 @@ async def send_paginated_scripture(channel, embed_msg, max_pages, link, items_pe
         items_per_page (int): Number of verses/items to show per page.
     """
     # Start with the first page
+    print('hello there')
     page_number = 1
     embed = format_scripture_message(embed_msg[0], embed_msg[1], embed_msg[2], page_number, items_per_page, link)
 
@@ -92,6 +76,7 @@ async def send_paginated_scripture(channel, embed_msg, max_pages, link, items_pe
         new_embed = format_scripture_message(embed_msg[0], embed_msg[1], embed_msg[2], page_number, items_per_page, link)
         await interaction.response.edit_message(embed=new_embed, view=view)
         update_buttons()  # Update the button states based on the current page
+        await interaction.message.edit(view=view)
 
     # Define button callbacks
     async def on_prev_button(interaction):
@@ -141,6 +126,22 @@ async def on_ready():
             #get reference from json file
             #send message of scripture
 
+@client.event
+async def on_guild_join(guild):
+    listOfServers = []
+    with open('./data/servers.json', 'r') as f:
+        serverDict = json.load(f)
+    for item in serverDict:
+        listOfServers.append(item)
+        print(item)
+    print(listOfServers)
+    if str(guild.id) not in listOfServers:
+        serverDict[guild.id] = {'bible':True}
+        serverDict = json.dumps(serverDict, indent=4)
+        with open('./data/servers.json', 'w') as f:
+            f.write(serverDict)
+            
+
 
 @client.event
 async def on_message(message):
@@ -177,10 +178,14 @@ async def on_message(message):
         for book in OLDTESTLIST:
             if book_name == book:
                 embed_msg = get_scripture(book_name, int(chapter), int(verse), None, "old")
+            if not is_biblical_references_allowed(message.guild.id):
+                return
 
         for book in NEWTESTLIST:
             if book_name == book:
                 embed_msg = get_scripture(book_name, int(chapter), int(verse), None, "new")
+            if not is_biblical_references_allowed(message.guild.id):
+                return
 
         for book in APOCRYPHALIST:
             if book_name == book:
@@ -192,7 +197,7 @@ async def on_message(message):
                 embed_msg = get_scripture(book_name, int(chapter), int(verse), None, "proc")
 
         if book_name in DCLIST:
-            with open("doctrine-and-covenants.json", "r") as f:
+            with open("./data/doctrine-and-covenants.json", "r") as f:
                 data = json.load(f)
             dataList = data["sections"]
             for sections in dataList:
@@ -205,7 +210,7 @@ async def on_message(message):
                             relevant_verses.append({"verse": searchingVerse["verse"], "text": searchingVerse["text"]})
                             print(f'found verse {searchingVerse["verse"], searchingVerse["text"]}')
 
-                    link = f"[D&C {chapter}:{verse}](https://www.churchofjesuschrist.org/study/scriptures/dc-testament/dc/{chapter}?lang=eng&id=p{verse}#p{verse})"
+                    link = f"https://www.churchofjesuschrist.org/study/scriptures/dc-testament/dc/{chapter}?lang=eng&id=p{verse}#p{verse}"
                     #book.title(), int(chapterNumber), relevant_verses, script, lowVerse, highVerse
 
                     items_per_page = calculate_items_per_page(relevant_verses)
@@ -215,6 +220,7 @@ async def on_message(message):
 
                     print(relevant_verses)
                     embed = format_scripture_message(book_name.title(), int(chapter), relevant_verses, page_number, items_per_page, link)
+                    await message.channel.send(embed=embed)
 
         else:
             link = make_link(embed_msg[0], embed_msg[1], embed_msg[3], embed_msg[4], embed_msg[5])
@@ -226,17 +232,20 @@ async def on_message(message):
             print(embed)
 
 
-        current_time = datetime.now()
-        formatted_time = current_time.strftime("%Y-%m-%d %H:%M")
-        try:
-            print(formatted_time)
-            if max_pages > 1:
-                await send_paginated_scripture(message.channel, embed_msg, max_pages, link, items_per_page)
-            print(formatted_time)
-        except Exception as e:
-            print(formatted_time, e)
-            await message.channel.send(formatted_time)
-            await message.channel.send(e)
+            current_time = datetime.now()
+            formatted_time = current_time.strftime("%Y-%m-%d %H:%M")
+            try:
+                print(f'{formatted_time} hey')
+                if max_pages > 1:
+                    await send_paginated_scripture(message.channel, embed_msg, max_pages, link, items_per_page)
+                elif max_pages == 1:
+                    page_number = 1
+                    embed = format_scripture_message(embed_msg[0], embed_msg[1], embed_msg[2], page_number, items_per_page, link)
+                    await message.channel.send(embed=embed)
+            except Exception as e:
+                print(formatted_time, e)
+                await message.channel.send(formatted_time)
+                await message.channel.send(e)
 
 
     for match in matches_range:
@@ -267,7 +276,9 @@ async def on_message(message):
                 embed_msg = get_scripture(book_name, int(chapter), int(start_verse), end_verse, "proc")
 
         if book_name in DCLIST:
-            with open("doctrine-and-covenants.json", "r") as f:
+            embed_msg = []
+            print('yo')
+            with open("./data/doctrine-and-covenants.json", "r") as f:
                 data = json.load(f)
             dataList = data["sections"]
             for sections in dataList:
@@ -280,7 +291,7 @@ async def on_message(message):
                             print(f'verse: {searchingVerse["verse"]}')
                             relevant_verses.append({"verse": searchingVerse["verse"], "text": searchingVerse["text"]})
 
-                    link = f"[D&C {chapter}:{start_verse}-{end_verse}](https://www.churchofjesuschrist.org/study/scriptures/dc-testament/dc/{chapter}?lang=eng&id=p{start_verse}-p{end_verse}#p{start_verse})"
+                    link = f"https://www.churchofjesuschrist.org/study/scriptures/dc-testament/dc/{chapter}?lang=eng&id=p{start_verse}-p{end_verse}#p{start_verse}"
 
                     print(relevant_verses)
                     items_per_page = calculate_items_per_page(relevant_verses)
@@ -288,7 +299,8 @@ async def on_message(message):
                     max_pages = (len(relevant_verses) + items_per_page - 1) // items_per_page  # Calculate total number of pages
 
                     embed = format_scripture_message('Doctrine and Covenants', chapter, relevant_verses, page_number, items_per_page, link)
-                    embed_msg = 'Doctrine and Covenants', chapter, relevant_verses, script, start_verse, end_verse
+                    
+                    embed_msg = ['Doctrine and Covenants', chapter, relevant_verses, script, start_verse, end_verse]
 
         #link = embed_msg[1].replace(' ', '%20')
         else:
@@ -303,10 +315,13 @@ async def on_message(message):
         current_time = datetime.now()
         formatted_time = current_time.strftime("%Y-%m-%d %H:%M")
         try:
-            print(formatted_time)
+            print(f'{formatted_time} hey')
             if max_pages > 1:
                 await send_paginated_scripture(message.channel, embed_msg, max_pages, link, items_per_page)
-            print(formatted_time)
+            elif max_pages == 1:
+                page_number = 1
+                embed = format_scripture_message(embed_msg[0], embed_msg[1], embed_msg[2], page_number, items_per_page, link)
+                await message.channel.send(embed=embed)
         except Exception as e:
             print(formatted_time, e)
             await message.channel.send(formatted_time)
@@ -320,12 +335,15 @@ client.remove_command('help')
 
 @client.command()
 async def servers(ctx):
-    servers = list(self.client.servers)
-    await ctx.send(f"Connected on {str(len(servers))} servers:")
+    listofids = []
+    for guild in client.guilds:
+        listofids.append(guild.id)
+    print(len(listofids))
 
 extensions = [
     "commands.scripture",  # All scripture-related commands
-    "commands.general"    # General commands (help, quotes, etc.)
+    "commands.general",    # General commands (help, quotes, etc.)
+    "commands.admin"
 ]
 
 
