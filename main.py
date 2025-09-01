@@ -14,13 +14,14 @@ from discord import app_commands
 from discord import Embed
 from discord.ui import View, Button
 
-from config import TOKEN
-
 from utils.constants import BOMLIST, DCLIST, PGPLIST, OLDTESTLIST, NEWTESTLIST, APOCRYPHALIST, PROCLIST, BOOKNAMEMAP
 from utils.scripture_utils import get_scripture, make_link, is_biblical_references_allowed
 from utils.embed_helpers import format_scripture_message, calculate_items_per_page
 
-client = discord.ext.commands.Bot(command_prefix="-", intents=discord.Intents.all())
+from config import TOKEN
+intents = discord.Intents.all()
+intents.presences = False
+client = discord.ext.commands.Bot(command_prefix="-", intents=intents)
 
 global embed_msg
 MAX_EMBED_LENGTH = 1200
