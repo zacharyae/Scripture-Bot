@@ -33,4 +33,4 @@ The Bot is intended for general audiences. We do not knowingly collect personal 
 
 ## 7. Contact
 
-For questions, concerns, or data removal requests, contact harryjadams@yahoo.com.
+For questions, concerns, or data removal requests, contact elliottzachary1st@yahoo.com
