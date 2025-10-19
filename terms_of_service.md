@@ -34,4 +34,4 @@ We are not responsible for any damages, direct or indirect, resulting from use o
 
 ## 7. Contact
 
-For questions or support, contact harryjadams@yahoo.com.
+For questions or support, contact elliottzachary1st@proton.com
