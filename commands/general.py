@@ -19,22 +19,57 @@ class General(commands.Cog):
     
     @commands.command()
     async def help(self, ctx):
+        embed = discord.Embed(
+            title="Help",
+            description="Here's everything I can do! You can also just type a scripture "
+                        "reference like `John 3:16` or `Alma 32:21` in chat and I'll look it up.",
+            url="https://www.churchofjesuschrist.org/study/scriptures?lang=eng&platform=web",
+            color=0x011738)
+ 
+        embed.add_field(
+            name='📖 Daily Scripture',
+            value=(
+                '`-votd` — Verse of the day\n'
+                '`-qotd` — Quote of the day\n'
+                '`-randomverse` — A random scripture'
+            ),
+            inline=False)
+ 
+        embed.add_field(
+            name='📚 Books & Proclamations',
+            value=(
+                '`-bom` `-old` `-new` `-pgp` `-apoc` — List the books in each volume of scripture\n'
+                '`-family` — The Family: A Proclamation to the World\n'
+                '`-livingChrist` (`-lc`) — The Living Christ\n'
+                '`-aof` — The Articles of Faith\n'
+                '`-restoration` — The Restoration Proclamation\n'
+                '`-od1` — Official Declaration 1'
+            ),
+            inline=False)
+ 
+        embed.add_field(
+            name='💙 Get Involved',
+            value=(
+                '`-ltw` — Light the World act-of-kindness generator\n'
+                '`-mhl` — Find your local meetinghouse\n'
+                '`-mtm` — Request a missionary visit\n'
+                '`-nyk` — Now You Know video series'
+            ),
+            inline=False)
+ 
+        embed.add_field(
+            name='⚙️ Server Settings (admin only)',
+            value='`-setServer yes/no` — Enable or disable Bible references on this server',
+            inline=False)
+ 
+        embed.set_footer(text='Prefix: -  •  Suggestions? Let us know!')
+ 
         try:
-            embed = discord.Embed(
-                title="Help",
-                url="https://www.churchofjesuschrist.org/study/scriptures?lang=eng&platform=web",
-                color = 0x011738)
-            embed.add_field(name='-setServer', value='Enables/disables the bible.', inline=False)
-            embed.add_field(name='-ltw', value='Generates an act of kindness you can do for someone!', inline=False)
-            embed.add_field(name='-votd', value='Brings up the verse of the day!', inline=False)
-            embed.add_field(name='-qotd', value='Brings up the quote of the day!', inline=False)
-            embed.add_field(name='-mhl', value='Pulls up a link to find your local chapel!', inline=False)
-            embed.add_field(name='-mtm', value='Pulls up a link to request a missionary visit!', inline=False)
-            embed.add_field(name='-nyk', value='Pulls up the Know You Know series', inline=False)
-            
             await ctx.send(embed=embed)
-        except:
-            print('hey there')
+        except discord.HTTPException as e:
+            print(f'Failed to send help embed: {e}')
+            await ctx.send('Sorry, something went wrong showing the help menu.')
+
         
         
         
@@ -47,7 +82,6 @@ class General(commands.Cog):
             
     @commands.command(aliases=['meetinghouselocator'])
     async def mhl(self, ctx):
-        print('hey')
         embed = discord.Embed(title="Find your local church!", color = 0x011738, url="https://maps.churchofjesuschrist.org/")
         await ctx.send(embed = embed)
                     

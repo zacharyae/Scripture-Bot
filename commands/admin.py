@@ -1,3 +1,4 @@
+import io
 import json
 import re
 import discord
@@ -19,12 +20,23 @@ class Admin(commands.Cog):
         self.bot = bot
         
     @commands.command()
-    @commands.has_permissions(administrator=True)
     async def getServers(self, ctx):
-        listOfServers = []
-        for guild in self.bot.guilds:
-            listOfServers.append(guild)
-        await ctx.send(listOfServers)
+        """Owner only. Lists every server the bot is in. (It used to be open
+        to any server's admin, who could see every other server the bot is in.)"""
+        if not await self.bot.is_owner(ctx.author):
+            await ctx.send('I am sorry but you do not have permission to do that.')
+            return
+
+        lines = [f"{guild.name.replace('`', chr(39))} ({guild.id}) - {guild.member_count} members" for guild in self.bot.guilds]  # backticks in a name would break the code block
+        text = f'{len(lines)} servers:\n' + '\n'.join(lines)
+        if len(text) <= 1900:
+            await ctx.send(f'```\n{text}\n```', allowed_mentions=discord.AllowedMentions.none())
+        else:
+            # Too long for one message (Discord's limit is 2,000 characters): send it as a file.
+            await ctx.send(
+                f'{len(lines)} servers:',
+                file=discord.File(io.BytesIO('\n'.join(lines).encode('utf-8')), filename='servers.txt')
+            )
         
     @commands.command()
     async def refreshServers(self, ctx):
