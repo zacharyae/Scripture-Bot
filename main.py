@@ -16,7 +16,7 @@ from discord.ui import View, Button
 
 from utils.constants import BOMLIST, DCLIST, PGPLIST, OLDTESTLIST, NEWTESTLIST, APOCRYPHALIST, PROCLIST, BOOKNAMEMAP
 from utils.scripture_utils import get_scripture, make_link, is_biblical_references_allowed
-from utils.embed_helpers import format_scripture_message, calculate_items_per_page
+from utils.embed_helpers import format_scripture_message, calculate_items_per_page, count_pages
 
 from config import TOKEN
 intents = discord.Intents.all()
@@ -27,12 +27,25 @@ global embed_msg
 MAX_EMBED_LENGTH = 1200
 MAX_FIELD_LENGTH = 1024
 
+_dc_data_cache = None
+
+def get_dc_data():
+    """Loads data/doctrine-and-covenants.json once and reuses it. Before, the
+    whole file was re-read and re-parsed for every Doctrine and Covenants
+    reference anyone typed. The data is only ever read, never modified."""
+    global _dc_data_cache
+    if _dc_data_cache is None:
+        with open("./data/doctrine-and-covenants.json", "r") as f:
+            _dc_data_cache = json.load(f)
+    return _dc_data_cache
+
 async def load_extensions():
     # List of command files to load
     extensions = [
         "commands.scripture",  # All scripture-related commands
         "commands.general",    # General commands (help, quotes, etc.)
-        "commands.admin"       # Admin-related commands (if any)
+        "commands.admin",       # Admin-related commands (if any)
+        "commands.lightTheWorld"
     ]
 
     for extension in extensions:
@@ -178,19 +191,22 @@ async def on_message(message):
 
         for book in OLDTESTLIST:
             if book_name == book:
+                if not is_biblical_references_allowed(message.guild.id):
+                    return
                 embed_msg = get_scripture(book_name, int(chapter), int(verse), None, "old")
-            if not is_biblical_references_allowed(message.guild.id):
-                return
 
         for book in NEWTESTLIST:
             if book_name == book:
+                if not is_biblical_references_allowed(message.guild.id):
+                    return
                 embed_msg = get_scripture(book_name, int(chapter), int(verse), None, "new")
-            if not is_biblical_references_allowed(message.guild.id):
-                return
 
         for book in APOCRYPHALIST:
             if book_name == book:
+                if not is_biblical_references_allowed(message.guild.id):
+                    return
                 embed_msg = get_scripture(book_name, int(chapter), int(verse), None, "apoc")
+
 
         for book in PROCLIST:
             if book_name == book:
@@ -198,15 +214,13 @@ async def on_message(message):
                 embed_msg = get_scripture(book_name, int(chapter), int(verse), None, "proc")
 
         if book_name in DCLIST:
-            with open("./data/doctrine-and-covenants.json", "r") as f:
-                data = json.load(f)
+            data = get_dc_data()
             dataList = data["sections"]
             for sections in dataList:
                 if sections["section"] == int(chapter):
                     print(sections["section"])
                     relevant_verses = []
                     for searchingVerse in sections["verses"]:
-                        print(f'verse: {verse}')
                         if searchingVerse["verse"] == int(verse):
                             relevant_verses.append({"verse": searchingVerse["verse"], "text": searchingVerse["text"]})
                             print(f'found verse {searchingVerse["verse"], searchingVerse["text"]}')
@@ -216,18 +230,21 @@ async def on_message(message):
 
                     items_per_page = calculate_items_per_page(relevant_verses)
                     page_number = 1
-                    max_pages = (len(relevant_verses) + items_per_page - 1) // items_per_page  # Calculate total number of pages
+                    max_pages = count_pages(relevant_verses)  # Calculate total number of pages
 
 
                     print(relevant_verses)
                     embed = format_scripture_message(book_name.title(), int(chapter), relevant_verses, page_number, items_per_page, link)
-                    await message.channel.send(embed=embed)
+                    if max_pages > 1:
+                        await send_paginated_scripture(message.channel, [book_name.title(), int(chapter), relevant_verses], max_pages, link, items_per_page)
+                    elif max_pages == 1:
+                        await message.channel.send(embed=embed)
 
         else:
             link = make_link(embed_msg[0], embed_msg[1], embed_msg[3], embed_msg[4], embed_msg[5])
             items_per_page = calculate_items_per_page(embed_msg[2])
             page_number = 1
-            max_pages = (len(embed_msg[2]) + items_per_page - 1) // items_per_page  # Calculate total number of pages
+            max_pages = count_pages(embed_msg[2])  # Calculate total number of pages
 
             embed = format_scripture_message(embed_msg[0], embed_msg[1], embed_msg[2], page_number, items_per_page, link)
             print(embed)
@@ -262,14 +279,20 @@ async def on_message(message):
 
         for book in OLDTESTLIST:
             if book_name == book:
+                if not is_biblical_references_allowed(message.guild.id):
+                    return
                 embed_msg = get_scripture(book_name, int(chapter), int(start_verse), end_verse, "old")
 
         for book in NEWTESTLIST:
             if book_name == book:
+                if not is_biblical_references_allowed(message.guild.id):
+                    return
                 embed_msg = get_scripture(book_name, int(chapter), int(start_verse), end_verse, "new")
 
         for book in APOCRYPHALIST:
             if book_name == book:
+                if not is_biblical_references_allowed(message.guild.id):
+                    return
                 embed_msg = get_scripture(book_name, int(chapter), int(start_verse), end_verse, "apoc")
 
         for book in PROCLIST:
@@ -279,8 +302,7 @@ async def on_message(message):
         if book_name in DCLIST:
             embed_msg = []
             print('yo')
-            with open("./data/doctrine-and-covenants.json", "r") as f:
-                data = json.load(f)
+            data = get_dc_data()
             dataList = data["sections"]
             for sections in dataList:
                 if sections["section"] == int(chapter):
@@ -289,7 +311,6 @@ async def on_message(message):
                     for searchingVerse in sections["verses"]:
                         print(searchingVerse)
                         if searchingVerse["verse"] >= int(start_verse) and searchingVerse["verse"] <= int(end_verse):
-                            print(f'verse: {searchingVerse["verse"]}')
                             relevant_verses.append({"verse": searchingVerse["verse"], "text": searchingVerse["text"]})
 
                     link = f"https://www.churchofjesuschrist.org/study/scriptures/dc-testament/dc/{chapter}?lang=eng&id=p{start_verse}-p{end_verse}#p{start_verse}"
@@ -297,7 +318,7 @@ async def on_message(message):
                     print(relevant_verses)
                     items_per_page = calculate_items_per_page(relevant_verses)
                     page_number = 1
-                    max_pages = (len(relevant_verses) + items_per_page - 1) // items_per_page  # Calculate total number of pages
+                    max_pages = count_pages(relevant_verses)  # Calculate total number of pages
 
                     embed = format_scripture_message('Doctrine and Covenants', chapter, relevant_verses, page_number, items_per_page, link)
                     
@@ -308,7 +329,7 @@ async def on_message(message):
             link = make_link(embed_msg[0], embed_msg[1], embed_msg[3], embed_msg[4], embed_msg[5])
             items_per_page = calculate_items_per_page(embed_msg[2])
             page_number = 1
-            max_pages = (len(embed_msg[2]) + items_per_page - 1) // items_per_page  # Calculate total number of pages
+            max_pages = count_pages(embed_msg[2])  # Calculate total number of pages
 
             embed = format_scripture_message(embed_msg[0], embed_msg[1], embed_msg[2], page_number, items_per_page, link)
             print(embed)
@@ -341,11 +362,6 @@ async def servers(ctx):
         listofids.append(guild.id)
     print(len(listofids))
 
-extensions = [
-    "commands.scripture",  # All scripture-related commands
-    "commands.general",    # General commands (help, quotes, etc.)
-    "commands.admin"
-]
 
 
 if __name__ == "__main__":
@@ -356,3 +372,4 @@ if __name__ == "__main__":
 
     import asyncio
     asyncio.run(start_bot())
+
