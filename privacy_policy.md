@@ -1,6 +1,6 @@
 # Privacy Policy
 
-**Effective Date:** October 3, 2026
+**Effective Date:** November 1, 2026
 
 This Privacy Policy explains how Scripture Bot ("the Bot") handles data when used on Discord.
 
