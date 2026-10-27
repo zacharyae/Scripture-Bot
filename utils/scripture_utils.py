@@ -4,10 +4,12 @@ from utils.constants import BOMLIST, DCLIST, PGPLIST, OLDTESTLIST, NEWTESTLIST, 
 def is_biblical_references_allowed(id):
     with open("././data/servers.json", "r") as f:  # Adjust to your file path
         serverDict = json.load(f)
+    # Default to True if the server is not in the settings file. (The comment below
+    # always said this, but nothing set a default, so a server missing from the
+    # file crashed with "local variable 'allowed' referenced before assignment".)
+    allowed = True
     for item in serverDict:
-        print(item)
         if item == str(id):
-            print(item)
             if serverDict[item]['bible'] == True:
                 allowed = True
             else:
@@ -103,3 +105,7 @@ def get_scripture(book, chapterNumber, lowVerse, highVerse, scripture):
                                 
 
                     return book.title(), int(chapterNumber), relevant_verses, script, lowVerse, highVerse
+
+    # Nothing matched (that chapter or verse doesn't exist). Return an empty result
+    # instead of None, so callers can quietly skip it instead of crashing.
+    return book.title(), int(chapterNumber), [], script, lowVerse, highVerse
