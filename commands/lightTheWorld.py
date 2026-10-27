@@ -34,7 +34,7 @@ load_dotenv()
 # bot runs. Store a backup of this key somewhere safe and separate from the
 # server (a password manager, etc.) - if it's lost, the encrypted data
 # cannot be recovered by anyone, including you.
-_encryption_key = "PcHqzkhzxzcnFlXFPMELxStbKmxr_xwgnMovOnEgLFo="#os.environ.get('LTW_ENCRYPTION_KEY')
+_encryption_key = #os.environ.get('LTW_ENCRYPTION_KEY')
 if not _encryption_key:
     raise RuntimeError(
         'LTW_ENCRYPTION_KEY environment variable is not set. Generate one with:\n'
